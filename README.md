@@ -1,0 +1,5 @@
+# reading-glasses
+
+This 5-day solo project in the Fullstack Academy curriculum gave me a chance to try something new and on my own. My concept was pitched to an instructor to verify its viability. For the first 3 days I struggled with what technologies to use and how to execute. It was only on the 4th day I settled on a concept/layout and began work on what is now my final product.
+
+The purpose of this project is to create a mobile app that can take a picture, utilize the Google Cloud Vision API to extract text from the image, and allow the user to then perform a simple image/definition search with a tap. The overarching idea was to help solve a personal problem - when ordering food at a restaurant, sometimes the names of the dishes are complete mysteries. Normally I would pull up Chrome and manually type in my search query. I wanted to develop an app that could abstract the whole process by letting the user only have to deal with three simple taps (opening the app, taking a picture, choosing a word).
