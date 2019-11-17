@@ -5,7 +5,8 @@ import {
   Button,
   StyleSheet,
   Dimensions,
-  FlatList
+  FlatList,
+  ActivityIndicator
 } from "react-native";
 import { Camera } from "expo-camera";
 import * as Permissions from "expo-permissions";
@@ -23,9 +24,17 @@ class CameraScreen extends React.Component {
     flashMode: Camera.Constants.FlashMode.off,
     // app needs to ask for permission to access native camera
     hasCameraPermission: null,
+    uploading: false,
     // Google Vision's response will be set here and then rendered on screen. if null, logic will just display camera
-    googleResponse: null
+    googleResponse: null,
+    phrases: []
   };
+
+  // once component mounts, asks for permission to use camera
+  async componentDidMount() {
+    const { status } = await Permissions.askAsync(Permissions.CAMERA);
+    this.setState({ hasCameraPermission: status === "granted" });
+  }
 
   // to be passed into Toolbar
   setFlashMode = flashMode => this.setState({ flashMode });
@@ -41,11 +50,114 @@ class CameraScreen extends React.Component {
     this.submitToGoogle();
   };
 
-  // once component mounts, asks for permission to use camera
-  async componentDidMount() {
-    const { status } = await Permissions.askAsync(Permissions.CAMERA);
-    this.setState({ hasCameraPermission: status === "granted" });
-  }
+  _keyExtractor = (item, index) => item.id;
+
+  // clear this.state.googleResponse to trigger re-render of camera component
+  openCamera = () => {
+    this.setState({ googleResponse: null });
+  };
+
+  maybeUploading = () => {
+    if (this.state.uploading) {
+      return (
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: "rgba(0,0,0,0.5)",
+              alignItems: "center",
+              justifyContent: "center"
+            }
+          ]}
+        >
+          <ActivityIndicator size="large" color="1fb9ac" />
+        </View>
+      );
+    }
+  };
+
+  submitToGoogle = async () => {
+    try {
+      // for rendering an animated loading overlay
+      this.setState({ uploading: true });
+      console.log("Submitting to Google Vision...");
+      // construct the body to send & request what kind of analyses you want
+      let body = JSON.stringify({
+        requests: [
+          {
+            features: [
+              // { type: "TEXT_DETECTION" },
+              { type: "DOCUMENT_TEXT_DETECTION" }
+            ],
+            image: {
+              content: this.state.captured.base64
+            }
+          }
+        ]
+      });
+      let response = await fetch(
+        "https://vision.googleapis.com/v1/images:annotate?key=" +
+          GOOGLE_CLOUD_VISION_API_KEY,
+        {
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json"
+          },
+          method: "POST",
+          body: body
+        }
+      );
+      let responseJson = await response.json();
+      this.setState({
+        googleResponse: responseJson,
+        uploading: false
+      });
+      console.log("Set JSON response on state!");
+      // this.arrayifyPhrases(
+      //   this.state.googleResponse.responses[0].fullTextAnnotation.pages
+      // );
+      this.arrayifyText(
+        this.state.googleResponse.responses[0].fullTextAnnotation.text
+      );
+      console.log("Converted response into array of phrases!");
+    } catch (error) {
+      this.setState({
+        uploading: false
+      });
+      console.log(error);
+    }
+  };
+
+  arrayifyText = string => {
+    let arr = string.split("\n");
+    this.setState({ phrases: arr });
+  };
+
+  // formWord = word => {
+  //   let formedWord = "";
+  //   for (let symbol of word.symbols) {
+  //     formedWord += symbol.text;
+  //   }
+  //   return formedWord;
+  // };
+
+  // arrayifyPhrases = response => {
+  //   let arr = [];
+  //   for (let page of response) {
+  //     for (let block of page.blocks) {
+  //       for (let paragraph of block.paragraphs) {
+  //         let line = "";
+  //         for (let word of paragraph.words) {
+  //           let formedWord = this.formWord(word);
+  //           line += `${formedWord} `;
+  //         }
+  //         arr.push(line.slice(0, -1));
+  //       }
+  //     }
+  //   }
+  // this.setState({ phrases: arr });
+  // console.log(this.state.phrases);
+  // };
 
   render() {
     const { hasCameraPermission, flashMode } = this.state;
@@ -79,20 +191,15 @@ class CameraScreen extends React.Component {
               setFlashMode={this.setFlashMode}
               onCapture={this.takePic}
             />
+            {this.maybeUploading()}
           </React.Fragment>
         ) : (
           // without checking googleResponse, error will be thrown once you tab away
           this.state.googleResponse && (
             <>
-              <FlatList
-                data={this.state.googleResponse.responses[0].text}
-                extraData={this.state}
-                keyExtractor={this._keyExtractor}
-                renderItem={({ item }) => <Text>Item: {item.description}</Text>}
-              />
-              <Text>
-                {this.state.googleResponse.responses[0].fullTextAnnotation.text}
-              </Text>
+              {this.state.phrases.map((phrase, idx) => (
+                <Text key={idx}>{phrase}</Text>
+              ))}
               <Button onPress={this.openCamera} title="Take Another Picture!" />
             </>
           )
@@ -100,54 +207,6 @@ class CameraScreen extends React.Component {
       </>
     );
   }
-
-  _keyExtractor = (item, index) => item.id;
-
-  // clear this.state.googleResponse to trigger re-render of camera component
-  openCamera = () => {
-    this.setState({ googleResponse: null });
-  };
-
-  submitToGoogle = async () => {
-    try {
-      // this.setState({ uploading: true }); maybe use this for a loading screen
-      console.log("Submitting to Google Vision...");
-      // construct the body to send & request what kind of analyses you want
-      let body = JSON.stringify({
-        requests: [
-          {
-            features: [
-              { type: "TEXT_DETECTION" },
-              { type: "DOCUMENT_TEXT_DETECTION" }
-            ],
-            image: {
-              content: this.state.captured.base64
-            }
-          }
-        ]
-      });
-      let response = await fetch(
-        "https://vision.googleapis.com/v1/images:annotate?key=" +
-          GOOGLE_CLOUD_VISION_API_KEY,
-        {
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json"
-          },
-          method: "POST",
-          body: body
-        }
-      );
-      let responseJson = await response.json();
-      this.setState({
-        googleResponse: responseJson
-      });
-      // this.setState({uploading:false}); maybe use to unmount the loading screen
-      console.log("Set JSON response on state!");
-    } catch (error) {
-      console.log(error);
-    }
-  };
 }
 // wrapping the component like this allows it to re-render when you tab back
 export default withNavigationFocus(CameraScreen);
