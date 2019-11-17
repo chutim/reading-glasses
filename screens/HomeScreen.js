@@ -42,7 +42,7 @@ export default function HomeScreen() {
           </View>
 
           <Text style={styles.getStartedText}>
-            Change this text andd your app will automatically reload.....
+            Change this text and your app will automatically reload.....
           </Text>
 
           <Text style={styles.getStartedText}>Wheeee!</Text>

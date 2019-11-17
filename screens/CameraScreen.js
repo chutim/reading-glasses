@@ -5,7 +5,7 @@ import {
   Button,
   StyleSheet,
   Dimensions,
-  FlatList,
+  ScrollView,
   ActivityIndicator
 } from "react-native";
 import { Camera } from "expo-camera";
@@ -26,7 +26,7 @@ class CameraScreen extends React.Component {
     hasCameraPermission: null,
     uploading: false,
     // Google Vision's response will be set here and then rendered on screen. if null, logic will just display camera
-    googleResponse: null,
+    googleResponse: 1,
     phrases: []
   };
 
@@ -49,8 +49,6 @@ class CameraScreen extends React.Component {
     });
     this.submitToGoogle();
   };
-
-  _keyExtractor = (item, index) => item.id;
 
   // clear this.state.googleResponse to trigger re-render of camera component
   openCamera = () => {
@@ -109,8 +107,8 @@ class CameraScreen extends React.Component {
       );
       let responseJson = await response.json();
       this.setState({
-        googleResponse: responseJson,
-        uploading: false
+        uploading: false,
+        googleResponse: responseJson
       });
       console.log("Set JSON response on state!");
       // this.arrayifyPhrases(
@@ -128,9 +126,42 @@ class CameraScreen extends React.Component {
     }
   };
 
+  removeParens = string => {
+    let result = "";
+    for (let i = 0; i < string.length; i++) {
+      if (string[i] === "(") {
+        result = result.slice(0, -1);
+        result += ", ";
+      } else if (string[i] === ")") continue;
+      else result += string[i];
+    }
+    return result;
+  };
+
+  capitalize = string => {
+    let result = string[0].toUpperCase();
+    for (let i = 1; i < string.length; i++) {
+      if (string[i] === " ") {
+        result += ` ${string[i + 1].toUpperCase()}`;
+        i++;
+      } else result += string[i];
+    }
+    return result;
+  };
+
   arrayifyText = string => {
-    let arr = string.split("\n");
-    this.setState({ phrases: arr });
+    const tempArr = string.split("\n");
+    const totalStr = tempArr.join(" ").toLowerCase();
+
+    const trimmedFront = totalStr.split("ingredients: ")[1];
+    const trimmed = trimmedFront.split(".")[0];
+
+    const lowerCaseStr = this.removeParens(trimmed);
+    const finalStr = this.capitalize(lowerCaseStr);
+    const finalArr = finalStr.split(", ");
+    console.log("finalArr", finalArr);
+
+    this.setState({ phrases: finalArr });
   };
 
   // formWord = word => {
@@ -196,12 +227,23 @@ class CameraScreen extends React.Component {
         ) : (
           // without checking googleResponse, error will be thrown once you tab away
           this.state.googleResponse && (
-            <>
-              {this.state.phrases.map((phrase, idx) => (
-                <Text key={idx}>{phrase}</Text>
-              ))}
-              <Button onPress={this.openCamera} title="Take Another Picture!" />
-            </>
+            <View style={styles.container}>
+              <ScrollView>
+                {this.state.phrases.map((phrase, idx) => (
+                  <Text key={idx} style={styles.list}>
+                    {phrase}
+                  </Text>
+                ))}
+              </ScrollView>
+              <View style={styles.buttonContainer}>
+                <Button
+                  style={styles.button}
+                  onPress={this.openCamera}
+                  title="Take Another Picture!"
+                  color="#1fb9ac"
+                />
+              </View>
+            </View>
           )
         )}
       </>
@@ -211,16 +253,28 @@ class CameraScreen extends React.Component {
 // wrapping the component like this allows it to re-render when you tab back
 export default withNavigationFocus(CameraScreen);
 
-const { width: winWidth, height: winHeight } = Dimensions.get("window");
+const { width: windowWidth, height: windowHeight } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   preview: {
-    height: winHeight,
-    width: winWidth,
+    height: windowHeight,
+    width: windowWidth,
     position: "absolute",
     left: 0,
     top: 0,
     right: 0,
+    bottom: 0
+  },
+  container: {
+    flex: 1
+  },
+  list: {
+    fontSize: 30,
+    textAlign: "center"
+  },
+  buttonContainer: {
+    width: windowWidth,
+    position: "absolute",
     bottom: 0
   }
 });
