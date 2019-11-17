@@ -10,8 +10,6 @@ import {
   Dimensions
 } from "react-native";
 
-// const { FlashMode: CameraFlashModes } = Camera.Constants;
-
 export default ({
   flashMode = Camera.Constants.FlashMode.off,
   setFlashMode,
@@ -41,12 +39,7 @@ export default ({
         </TouchableOpacity>
       </Col>
       <Col size={2} style={styles.alignCenter}>
-        <TouchableWithoutFeedback
-          // onPressIn={onCaptureIn}
-          // onPressOut={onCaptureOut}
-          // onLongPress={onLongCapture}
-          onPress={onCapture}
-        >
+        <TouchableWithoutFeedback onPress={onCapture}>
           <View style={styles.captureBtn}></View>
         </TouchableWithoutFeedback>
       </Col>

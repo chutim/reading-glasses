@@ -24,6 +24,10 @@ const HomeStack = createStackNavigator(
 
 HomeStack.navigationOptions = {
   tabBarLabel: "Home",
+  tabBarOptions: {
+    activeTintColor: "#1fbaad",
+    inactiveTintColor: "#9defe8"
+  },
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
@@ -47,6 +51,10 @@ const CameraStack = createStackNavigator(
 
 CameraStack.navigationOptions = {
   tabBarLabel: "Camera",
+  tabBarOptions: {
+    activeTintColor: "#1fbaad",
+    inactiveTintColor: "#9defe8"
+  },
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
@@ -66,6 +74,10 @@ const SettingsStack = createStackNavigator(
 
 SettingsStack.navigationOptions = {
   tabBarLabel: "Settings",
+  tabBarOptions: {
+    activeTintColor: "#1fbaad",
+    inactiveTintColor: "#9defe8"
+  },
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}

@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Text,
+  Button,
+  StyleSheet,
+  Dimensions,
+  FlatList
+} from "react-native";
 import { Camera } from "expo-camera";
 import * as Permissions from "expo-permissions";
 import Toolbar from "../components/CameraTools";
@@ -7,28 +14,34 @@ import { GOOGLE_CLOUD_VISION_API_KEY } from "../secrets";
 import { withNavigationFocus } from "react-navigation";
 
 class CameraScreen extends React.Component {
+  // initiated to be set to Camera component, so that its takePicture method is accessible
   camera = null;
   state = {
+    // where the image will be stored
     captured: null,
-    // setting flash to be turned off by default
+    // flash is off by default
     flashMode: Camera.Constants.FlashMode.off,
-    // capturing: true,
+    // app needs to ask for permission to access native camera
     hasCameraPermission: null,
+    // Google Vision's response will be set here and then rendered on screen. if null, logic will just display camera
     googleResponse: null
   };
 
+  // to be passed into Toolbar
   setFlashMode = flashMode => this.setState({ flashMode });
 
   takePic = async () => {
+    // requests that the image also be converted into base64, needed for sending to Google Vision
     const photoData = await this.camera.takePictureAsync({ base64: true });
+    console.log("Picture taken!");
     this.setState({
-      // capturing: false,
       captured: photoData
-      //photoData includes {uri,width,height,exif,base64}
+      // photoData includes {uri,width,height,base64}
     });
     this.submitToGoogle();
   };
 
+  // once component mounts, asks for permission to use camera
   async componentDidMount() {
     const { status } = await Permissions.askAsync(Permissions.CAMERA);
     this.setState({ hasCameraPermission: status === "granted" });
@@ -37,17 +50,20 @@ class CameraScreen extends React.Component {
   render() {
     const { hasCameraPermission, flashMode } = this.state;
 
+    // if permission hasn't been asked for, render nothing. if denied, render text.
     if (hasCameraPermission === null) {
       return null;
     } else if (hasCameraPermission === false) {
       return <Text>Access to camera has been denied.</Text>;
     }
 
+    // isFocused allows the camera to appear again after tabbing away and back. withNavigationFocus wraps this whole component in order for this to work
     const { isFocused } = this.props;
 
+    // if there is no data yet, display the camera and its tools. if there is data, render it and provide a button to open the camera again, erasing this.state.googleResponse
     return (
       <>
-        {isFocused && (
+        {isFocused && this.state.googleResponse === null ? (
           <React.Fragment>
             <View>
               <Camera
@@ -64,14 +80,39 @@ class CameraScreen extends React.Component {
               onCapture={this.takePic}
             />
           </React.Fragment>
+        ) : (
+          // without checking googleResponse, error will be thrown once you tab away
+          this.state.googleResponse && (
+            <>
+              <FlatList
+                data={this.state.googleResponse.responses[0].text}
+                extraData={this.state}
+                keyExtractor={this._keyExtractor}
+                renderItem={({ item }) => <Text>Item: {item.description}</Text>}
+              />
+              <Text>
+                {this.state.googleResponse.responses[0].fullTextAnnotation.text}
+              </Text>
+              <Button onPress={this.openCamera} title="Take Another Picture!" />
+            </>
+          )
         )}
       </>
     );
   }
 
+  _keyExtractor = (item, index) => item.id;
+
+  // clear this.state.googleResponse to trigger re-render of camera component
+  openCamera = () => {
+    this.setState({ googleResponse: null });
+  };
+
   submitToGoogle = async () => {
     try {
-      // this.setState({ uploading: true });
+      // this.setState({ uploading: true }); maybe use this for a loading screen
+      console.log("Submitting to Google Vision...");
+      // construct the body to send & request what kind of analyses you want
       let body = JSON.stringify({
         requests: [
           {
@@ -98,16 +139,17 @@ class CameraScreen extends React.Component {
         }
       );
       let responseJson = await response.json();
-      // console.log(responseJson);
       this.setState({
         googleResponse: responseJson
       });
+      // this.setState({uploading:false}); maybe use to unmount the loading screen
+      console.log("Set JSON response on state!");
     } catch (error) {
       console.log(error);
     }
   };
 }
-
+// wrapping the component like this allows it to re-render when you tab back
 export default withNavigationFocus(CameraScreen);
 
 const { width: winWidth, height: winHeight } = Dimensions.get("window");
