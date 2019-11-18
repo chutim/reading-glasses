@@ -43,6 +43,7 @@ class CameraScreen extends React.Component {
   setFlashMode = flashMode => this.setState({ flashMode });
 
   takePic = async () => {
+    this.setState({ uploading: true });
     // requests that the image also be converted into base64, needed for sending to Google Vision
     const photoData = await this.camera.takePictureAsync({ base64: true });
     console.log("Picture taken!");
@@ -71,13 +72,13 @@ class CameraScreen extends React.Component {
           style={[
             StyleSheet.absoluteFill,
             {
-              backgroundColor: "rgba(0,0,0,0.5)",
+              backgroundColor: "rgba(113, 231, 221, 1)",
               alignItems: "center",
               justifyContent: "center"
             }
           ]}
         >
-          <BarIndicator count={7} size={70} color="rgb(255,175,2)" />
+          <BarIndicator count={9} size={70} color="rgb(255,175,2)" />
         </View>
       );
     }
@@ -86,7 +87,7 @@ class CameraScreen extends React.Component {
   submitToGoogle = async () => {
     try {
       // for rendering an animated loading overlay
-      this.setState({ uploading: true });
+      // this.setState({ uploading: true });
       console.log("Submitting to Google Vision...");
       // construct the body to send & request what kind of analyses you want
       let body = JSON.stringify({
@@ -170,7 +171,6 @@ class CameraScreen extends React.Component {
     const lowerCaseStr = this.removeParens(trimmed);
     const finalStr = this.capitalize(lowerCaseStr);
     const finalArr = finalStr.split(", ");
-    console.log("finalArr", finalArr);
 
     this.setState({ ingredients: finalArr });
   };
@@ -418,7 +418,6 @@ const styles = StyleSheet.create({
     fontSize: 20,
     textAlign: "center",
     margin: 10,
-
     padding: 15,
     paddingLeft: 20,
     paddingRight: 20,
