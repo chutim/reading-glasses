@@ -1,14 +1,50 @@
-import React from 'react';
-import { ExpoConfigView } from '@expo/samples';
+import React, { Component } from "react";
+import { StyleSheet, Text, View, Image } from "react-native";
+import ImagePicker from "react-native-image-crop-picker";
+import * as Permissions from "expo-permissions";
 
-export default function SettingsScreen() {
-  /**
-   * Go ahead and delete ExpoConfigView and replace it with your content;
-   * we just wanted to give you a quick view of your config.
-   */
-  return <ExpoConfigView />;
+export default class App extends React.Component {
+  state = {
+    hasCameraPermission: ""
+  };
+
+  async componentDidMount() {
+    const { status } = await Permissions.askAsync(Permissions.CAMERA);
+    this.setState({ hasCameraPermission: status === "granted" });
+  }
+
+  SelectImage() {
+    ImagePicker.openCropper({
+      path: "../assets/images/reading-glasses.png",
+      width: 300,
+      height: 400
+    }).then(image => {
+      console.log(image);
+    });
+  }
+  render() {
+    return (
+      <View style={styles.container}>
+        <Text
+          style={{ padding: 20, backgroundColor: "#ddd" }}
+          onPress={() => this.SelectImage()}
+        >
+          Select Image
+        </Text>
+      </View>
+    );
+  }
 }
 
-SettingsScreen.navigationOptions = {
-  title: 'app.json',
-};
+const styles = StyleSheet.create({
+  Image: {
+    height: 250,
+    width: 250
+  },
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#fff"
+  }
+});

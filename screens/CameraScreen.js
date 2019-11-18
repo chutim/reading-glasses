@@ -2,12 +2,12 @@ import React from "react";
 import {
   View,
   Text,
-  Button,
   StyleSheet,
   Dimensions,
   ScrollView,
-  ActivityIndicator
+  TouchableOpacity
 } from "react-native";
+import { BarIndicator } from "react-native-indicators";
 import { Camera } from "expo-camera";
 import * as Permissions from "expo-permissions";
 import Toolbar from "../components/CameraTools";
@@ -26,8 +26,11 @@ class CameraScreen extends React.Component {
     hasCameraPermission: null,
     uploading: false,
     // Google Vision's response will be set here and then rendered on screen. if null, logic will just display camera
-    googleResponse: 1,
-    phrases: []
+    googleResponse: null,
+    ingredients: [],
+    ingredientsCodes: [],
+    ingredientsData: [],
+    paranoidButtonState: false
   };
 
   // once component mounts, asks for permission to use camera
@@ -52,7 +55,13 @@ class CameraScreen extends React.Component {
 
   // clear this.state.googleResponse to trigger re-render of camera component
   openCamera = () => {
-    this.setState({ googleResponse: null });
+    this.setState({
+      googleResponse: null,
+      ingredients: [],
+      ingredientsCodes: [],
+      ingredientsData: [],
+      paranoidButtonState: false
+    });
   };
 
   maybeUploading = () => {
@@ -68,7 +77,7 @@ class CameraScreen extends React.Component {
             }
           ]}
         >
-          <ActivityIndicator size="large" color="1fb9ac" />
+          <BarIndicator count={7} size={70} color="rgb(255,175,2)" />
         </View>
       );
     }
@@ -110,14 +119,16 @@ class CameraScreen extends React.Component {
         uploading: false,
         googleResponse: responseJson
       });
-      console.log("Set JSON response on state!");
-      // this.arrayifyPhrases(
+      console.log("Set Google Vision JSON response on state!");
+      // this.arrayifyingredients(
       //   this.state.googleResponse.responses[0].fullTextAnnotation.pages
       // );
       this.arrayifyText(
         this.state.googleResponse.responses[0].fullTextAnnotation.text
       );
-      console.log("Converted response into array of phrases!");
+      console.log(
+        "Converted Google Vision response into array of ingredients!"
+      );
     } catch (error) {
       this.setState({
         uploading: false
@@ -161,7 +172,7 @@ class CameraScreen extends React.Component {
     const finalArr = finalStr.split(", ");
     console.log("finalArr", finalArr);
 
-    this.setState({ phrases: finalArr });
+    this.setState({ ingredients: finalArr });
   };
 
   // formWord = word => {
@@ -172,7 +183,7 @@ class CameraScreen extends React.Component {
   //   return formedWord;
   // };
 
-  // arrayifyPhrases = response => {
+  // arrayifyingredients = response => {
   //   let arr = [];
   //   for (let page of response) {
   //     for (let block of page.blocks) {
@@ -186,9 +197,88 @@ class CameraScreen extends React.Component {
   //       }
   //     }
   //   }
-  // this.setState({ phrases: arr });
-  // console.log(this.state.phrases);
+  // this.setState({ ingredients: arr });
+  // console.log(this.state.ingredients);
   // };
+
+  submitForCodes = async () => {
+    try {
+      // for rendering an animated loading overlay
+      this.setState({ uploading: true, paranoidButtonState: true });
+      console.log("Submitting to E-Additives for codes...");
+
+      for (let i = 0; i < this.state.ingredients.length; i++) {
+        let currentIngredient = this.state.ingredients[i];
+        let response = await fetch(
+          `https://vx-e-additives.p.rapidapi.com/additives/search?sort=name&q=${currentIngredient}`,
+          {
+            method: "GET",
+            headers: {
+              "x-rapidapi-host": "vx-e-additives.p.rapidapi.com",
+              "x-rapidapi-key":
+                "d0458d5b93mshf9bad67704cc261p151375jsn3f91559c9939"
+            }
+          }
+        );
+        let responseJson = await response.json();
+        if (responseJson.length) {
+          this.setState({
+            ingredientsCodes: [
+              ...this.state.ingredientsCodes,
+              responseJson[0].code
+            ]
+          });
+        }
+      }
+
+      this.setState({
+        uploading: false
+      });
+      console.log("Set E-Additive codes on state!");
+      this.submitForData();
+    } catch (error) {
+      this.setState({
+        uploading: false
+      });
+      console.log(error);
+    }
+  };
+
+  submitForData = async () => {
+    try {
+      // for rendering an animated loading overlay
+      this.setState({ uploading: true });
+      console.log("Submitting to E-Additives for additive data...");
+
+      for (let i = 0; i < this.state.ingredientsCodes.length; i++) {
+        let currentCode = this.state.ingredientsCodes[i];
+        let response = await fetch(
+          `https://vx-e-additives.p.rapidapi.com/additives/${currentCode}?locale=en`,
+          {
+            method: "GET",
+            headers: {
+              "x-rapidapi-host": "vx-e-additives.p.rapidapi.com",
+              "x-rapidapi-key":
+                "d0458d5b93mshf9bad67704cc261p151375jsn3f91559c9939"
+            }
+          }
+        );
+        let responseJson = await response.json();
+        this.setState({
+          ingredientsData: [...this.state.ingredientsData, responseJson]
+        });
+      }
+      this.setState({
+        uploading: false
+      });
+      console.log("Set E-Additive data on state!");
+    } catch (error) {
+      this.setState({
+        uploading: false
+      });
+      console.log(error);
+    }
+  };
 
   render() {
     const { hasCameraPermission, flashMode } = this.state;
@@ -229,20 +319,66 @@ class CameraScreen extends React.Component {
           this.state.googleResponse && (
             <View style={styles.container}>
               <ScrollView>
-                {this.state.phrases.map((phrase, idx) => (
-                  <Text key={idx} style={styles.list}>
-                    {phrase}
-                  </Text>
-                ))}
+                {this.state.ingredientsData.length === 0
+                  ? this.state.ingredients.map((ingredient, idx) => (
+                      <Text key={idx} style={styles.list}>
+                        {ingredient}
+                      </Text>
+                    ))
+                  : this.state.ingredientsData.map((additive, idx) => (
+                      <View key={idx} style={styles.dataContainer}>
+                        <Text style={styles.dataTitle}>
+                          {additive.name.toUpperCase()}:{" "}
+                          {additive.function || "Undesignated Purpose"}
+                        </Text>
+                        <Text style={[styles.dataWarning, styles.dataSection]}>
+                          <Text
+                            style={{ fontWeight: "bold", color: "#ff6e4e" }}
+                          >
+                            Warning:{" "}
+                          </Text>
+                          {additive.notice || "N/A"}
+                        </Text>
+                        <Text
+                          style={[styles.dataInternational, styles.dataSection]}
+                        >
+                          <Text style={[styles.dataBold, { color: "#ffaf02" }]}>
+                            International Status:{" "}
+                          </Text>
+                          {additive.status || "N/A"}
+                        </Text>
+                        <Text style={[styles.dataBody, styles.dataSection]}>
+                          <Text style={styles.dataBold}>Uses: </Text>
+                          {additive.foods || "N/A"}
+                        </Text>
+                        <Text style={[styles.dataBody, styles.dataSection]}>
+                          <Text style={styles.dataBold}>Description: </Text>
+                          {additive.info || "N/A"}
+                        </Text>
+                      </View>
+                    ))}
               </ScrollView>
               <View style={styles.buttonContainer}>
-                <Button
-                  style={styles.button}
-                  onPress={this.openCamera}
-                  title="Take Another Picture!"
-                  color="#1fb9ac"
-                />
+                <TouchableOpacity
+                  disabled={this.state.paranoidButtonState}
+                  onPress={this.submitForCodes}
+                >
+                  <View
+                    style={{
+                      opacity: this.state.paranoidButtonState ? 0.6 : 1,
+                      backgroundColor: "#ffaf02"
+                    }}
+                  >
+                    <Text style={styles.button}>LET'S GET PARANOID</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={this.openCamera}>
+                  <Text style={[styles.button, { backgroundColor: "#1fb9ac" }]}>
+                    ANALYZE ANOTHER LABEL
+                  </Text>
+                </TouchableOpacity>
               </View>
+              {this.maybeUploading()}
             </View>
           )
         )}
@@ -265,16 +401,69 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0
   },
+  button: {
+    textAlign: "center",
+    textAlignVertical: "center",
+    height: 50,
+    color: "white",
+    fontSize: 20,
+    fontWeight: "bold"
+  },
   container: {
-    flex: 1
+    flex: 1,
+    backgroundColor: "#9cffde",
+    paddingBottom: 100
   },
   list: {
-    fontSize: 30,
-    textAlign: "center"
+    fontSize: 20,
+    textAlign: "center",
+    margin: 10,
+
+    padding: 15,
+    paddingLeft: 20,
+    paddingRight: 20,
+    borderRadius: 30,
+    backgroundColor: "white"
   },
   buttonContainer: {
     width: windowWidth,
     position: "absolute",
     bottom: 0
+  },
+  dataContainer: {
+    padding: 17,
+    margin: 15,
+    borderRadius: 25,
+    backgroundColor: "white"
+  },
+  dataTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "white",
+    padding: 13,
+    marginBottom: 10,
+    backgroundColor: "#44e0d4",
+    borderRadius: 17,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0
+  },
+  dataSection: {
+    paddingBottom: 6
+  },
+  dataBold: {
+    fontWeight: "bold",
+    color: "#1fb9ac"
+  },
+  dataWarning: {
+    fontSize: 17,
+    color: "#FF9881"
+  },
+  dataInternational: {
+    fontSize: 17,
+    color: "#ffc74f"
+  },
+  dataBody: {
+    fontSize: 17,
+    color: "#23cfc0"
   }
 });

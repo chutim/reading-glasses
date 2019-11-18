@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Col, Row, Grid } from "react-native-easy-grid";
 import {
   View,
-  TouchableWithoutFeedback,
+  TouchableNativeFeedback,
   TouchableOpacity,
   StyleSheet,
   Dimensions
@@ -39,9 +39,12 @@ export default ({
         </TouchableOpacity>
       </Col>
       <Col size={2} style={styles.alignCenter}>
-        <TouchableWithoutFeedback onPress={onCapture}>
+        <TouchableNativeFeedback
+          onPress={onCapture}
+          background={TouchableNativeFeedback.SelectableBackground()}
+        >
           <View style={styles.captureBtn}></View>
-        </TouchableWithoutFeedback>
+        </TouchableNativeFeedback>
       </Col>
       <Col></Col>
     </Row>
