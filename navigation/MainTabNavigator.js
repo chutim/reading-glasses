@@ -8,7 +8,7 @@ import {
 import TabBarIcon from "../components/TabBarIcon";
 import HomeScreen from "../screens/HomeScreen";
 import CameraScreen from "../screens/CameraScreen";
-import SettingsScreen from "../screens/SettingsScreen";
+import App from "../screens/SettingsScreen";
 
 const config = Platform.select({
   web: { headerMode: "screen" },
@@ -24,14 +24,15 @@ const HomeStack = createStackNavigator(
 
 HomeStack.navigationOptions = {
   tabBarLabel: "Home",
+  tabBarOptions: {
+    activeTintColor: "#1fbaad",
+    inactiveTintColor: "#9defe8",
+    showLabel: false
+  },
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
-      name={
-        Platform.OS === "ios"
-          ? `ios-information-circle${focused ? "" : "-outline"}`
-          : "md-information-circle"
-      }
+      name={Platform.OS === "ios" ? "ios-home" : "md-home"}
     />
   )
 };
@@ -47,6 +48,11 @@ const CameraStack = createStackNavigator(
 
 CameraStack.navigationOptions = {
   tabBarLabel: "Camera",
+  tabBarOptions: {
+    activeTintColor: "#1fbaad",
+    inactiveTintColor: "#9defe8",
+    showLabel: false
+  },
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
@@ -59,13 +65,17 @@ CameraStack.path = "";
 
 const SettingsStack = createStackNavigator(
   {
-    Settings: SettingsScreen
+    Settings: App
   },
   config
 );
 
 SettingsStack.navigationOptions = {
   tabBarLabel: "Settings",
+  tabBarOptions: {
+    activeTintColor: "#1fbaad",
+    inactiveTintColor: "#9defe8"
+  },
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
@@ -78,8 +88,8 @@ SettingsStack.path = "";
 
 const tabNavigator = createBottomTabNavigator({
   HomeStack,
-  CameraStack,
-  SettingsStack
+  CameraStack
+  // SettingsStack
 });
 
 tabNavigator.path = "";

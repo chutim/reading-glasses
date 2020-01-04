@@ -4,13 +4,11 @@ import { Ionicons } from "@expo/vector-icons";
 import { Col, Row, Grid } from "react-native-easy-grid";
 import {
   View,
-  TouchableWithoutFeedback,
+  TouchableNativeFeedback,
   TouchableOpacity,
   StyleSheet,
   Dimensions
 } from "react-native";
-
-// const { FlashMode: CameraFlashModes } = Camera.Constants;
 
 export default ({
   flashMode = Camera.Constants.FlashMode.off,
@@ -41,14 +39,12 @@ export default ({
         </TouchableOpacity>
       </Col>
       <Col size={2} style={styles.alignCenter}>
-        <TouchableWithoutFeedback
-          // onPressIn={onCaptureIn}
-          // onPressOut={onCaptureOut}
-          // onLongPress={onLongCapture}
+        <TouchableNativeFeedback
           onPress={onCapture}
+          background={TouchableNativeFeedback.SelectableBackground()}
         >
           <View style={styles.captureBtn}></View>
-        </TouchableWithoutFeedback>
+        </TouchableNativeFeedback>
       </Col>
       <Col></Col>
     </Row>
