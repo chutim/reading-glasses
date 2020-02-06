@@ -7,7 +7,7 @@
     "platforms": ["ios", "android", "web"],
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/reading-glasses-icon.png",
     "splash": {
       "image": "./assets/images/reading-glasses.png",
       "resizeMode": "cover",
@@ -19,6 +19,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
-    }
+    },
+    "description": ""
   }
 }
