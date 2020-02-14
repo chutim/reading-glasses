@@ -19,3 +19,6 @@ The following gif demonstrates the user experience:
 - Take another photo if desired
 
 ![Reading Glasses Demo](demo.gif)
+
+### Deployment
+https://expo.io/@chutim/reading-glasses
