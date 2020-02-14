@@ -21,4 +21,4 @@ The following gif demonstrates the user experience:
 ![Reading Glasses Demo](demo.gif)
 
 ### Deployment
-https://expo.io/@chutim/reading-glasses
+This app was deployed using Expo: https://expo.io/@chutim/reading-glasses
